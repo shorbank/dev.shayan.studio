@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full Page Scrolling</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            overflow: hidden; /* Prevent default scrolling */
+        }
+
+        #container {
+            position: relative;
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        section {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: transform 0.8s ease;
+        }
+
+        section h2 {
+            font-size: 3rem;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        section:nth-child(1) {
+            background-color: #e74c3c;
+        }
+
+        section:nth-child(2) {
+            background-color: #3498db;
+        }
+
+        section:nth-child(3) {
+            background-color: #2ecc71;
+        }
+
+        section:nth-child(4) {
+            background-color: #f39c12;
+        }
+
+        section:nth-child(5) {
+            background-color: #9b59b6;
+        }
+
+        #navigation {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 100;
+        }
+
+        .nav-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.5);
+            margin: 10px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .nav-dot.active {
+            background-color: white;
+            transform: scale(1.5);
+        }
+
+        @media (max-width: 768px) {
+            section h2 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <section id="section1">
+            <h2>Section 1</h2>
+        </section>
+        <section id="section2">
+            <h2>Section 2</h2>
+        </section>
+        <section id="section3">
+            <h2>Section 3</h2>
+        </section>
+        <section id="section4">
+            <h2>Section 4</h2>
+        </section>
+        <section id="section5">
+            <h2>Section 5</h2>
+        </section>
+    </div>
+    <div id="navigation"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const container = document.getElementById('container');
+            const sections = document.querySelectorAll('section');
+            const navContainer = document.getElementById('navigation');
+            let currentSection = 0;
+            let isScrolling = false;
+            let touchStartY = 0;
+            let touchEndY = 0;
+
+            // Position sections initially
+            function initSections() {
+                sections.forEach((section, index) => {
+                    section.style.transform = `translateY(${index * 100}%)`;
+                });
+            }
+
+            // Create navigation dots
+            function createNavigation() {
+                sections.forEach((_, index) => {
+                    const dot = document.createElement('div');
+                    dot.classList.add('nav-dot');
+                    dot.addEventListener('click', () => {
+                        if (!isScrolling) {
+                            scrollToSection(index);
+                        }
+                    });
+                    navContainer.appendChild(dot);
+                });
+                updateNavigation();
+            }
+
+            // Update active navigation dot
+            function updateNavigation() {
+                const dots = document.querySelectorAll('.nav-dot');
+                dots.forEach((dot, index) => {
+                    if (index === currentSection) {
+                        dot.classList.add('active');
+                    } else {
+                        dot.classList.remove('active');
+                    }
+                });
+            }
+
+            // Scroll to a specific section
+            function scrollToSection(index) {
+                if (index < 0) index = 0;
+                if (index >= sections.length) index = sections.length - 1;
+                
+                isScrolling = true;
+                currentSection = index;
+                
+                sections.forEach((section, i) => {
+                    section.style.transform = `translateY(${(i - index) * 100}%)`;
+                });
+                
+                updateNavigation();
+                
+                // Prevent rapid scrolling
+                setTimeout(() => {
+                    isScrolling = false;
+                }, 800); // Match the transition duration
+            }
+
+            // Handle mouse wheel events
+            function handleWheel(e) {
+                if (isScrolling) return;
+                
+                const direction = e.deltaY > 0 ? 1 : -1;
+                scrollToSection(currentSection + direction);
+                e.preventDefault();
+            }
+
+            // Handle keyboard navigation
+            function handleKeydown(e) {
+                if (isScrolling) return;
+                
+                switch (e.key) {
+                    case 'ArrowDown':
+                    case 'PageDown':
+                        scrollToSection(currentSection + 1);
+                        e.preventDefault();
+                        break;
+                    case 'ArrowUp':
+                    case 'PageUp':
+                        scrollToSection(currentSection - 1);
+                        e.preventDefault();
+                        break;
+                    case 'Home':
+                        scrollToSection(0);
+                        e.preventDefault();
+                        break;
+                    case 'End':
+                        scrollToSection(sections.length - 1);
+                        e.preventDefault();
+                        break;
+                }
+            }
+
+            // Handle touch events for mobile
+            function handleTouchStart(e) {
+                touchStartY = e.touches[0].clientY;
+            }
+
+            function handleTouchMove(e) {
+                if (isScrolling) {
+                    e.preventDefault();
+                    return;
+                }
+                
+                touchEndY = e.touches[0].clientY;
+                e.preventDefault(); // Prevent default scrolling
+            }
+
+            function handleTouchEnd() {
+                if (isScrolling) return;
+                
+                const diff = touchStartY - touchEndY;
+                if (Math.abs(diff) > 50) { // Threshold for swipe detection
+                    if (diff > 0) {
+                        // Swipe up, go to next section
+                        scrollToSection(currentSection + 1);
+                    } else {
+                        // Swipe down, go to previous section
+                        scrollToSection(currentSection - 1);
+                    }
+                }
+            }
+
+            // Initialize
+            initSections();
+            createNavigation();
+
+            // Event listeners
+            window.addEventListener('wheel', handleWheel, { passive: false });
+            window.addEventListener('keydown', handleKeydown);
+            container.addEventListener('touchstart', handleTouchStart, { passive: true });
+            container.addEventListener('touchmove', handleTouchMove, { passive: false });
+            container.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                scrollToSection(currentSection);
+            });
+        });
+    </script>
+</body>
+</html>
