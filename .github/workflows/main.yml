@@ -1,0 +1,42 @@
+name: Build and Deploy Astro
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build ⛏
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@main
+      - name: Install dependencies
+        run: npm ci
+      - name: Build project
+        run: npm run build
+      - name: Archive production artifact
+        uses: actions/upload-artifact@main
+        with:
+          name: dist
+          path: dist
+  
+  deploy:
+    name: Deploy 🚀
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@main
+        with: 
+          name: dist
+          path: dist
+      - name: Sync only dist folder to hosting
+        uses: SamKirkland/FTP-Deploy-Action@4.0.0
+        with: 
+          server: ${{ secrets.SFTP_HOST }}
+          username: ${{ secrets.SFTP_USERNAME }}
+          password: ${{ secrets.SFTP_PASSWORD }}
+          local-dir: dist/
+          server-dir: /
