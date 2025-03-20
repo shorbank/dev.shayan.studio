@@ -1,34 +1,42 @@
-name: Deploy Astro Site
+name: Build and Deploy Astro
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
-  build-and-deploy:
+  build:
+    name: Build ⛏
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '18'
-          cache: 'npm'
-
-      - name: Install Dependencies
-        run: npm install
-
-      - name: Build Astro Project
+      - name: Checkout repository
+        uses: actions/checkout@main
+      - name: Install dependencies
+        run: npm ci
+      - name: Build project
         run: npm run build
-
-      - name: Deploy via SFTP
-        uses: appleboy/scp-action@master
+      - name: Archive production artifact
+        uses: actions/upload-artifact@main
         with:
-          host: ${{ secrets.SFTP_HOST }}
+          name: dist
+          path: dist
+  
+  deploy:
+    name: Deploy 🚀
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@main
+        with: 
+          name: dist
+          path: dist
+      - name: Sync only dist folder to hosting
+        uses: SamKirkland/FTP-Deploy-Action@4.0.0
+        with: 
+          server: ${{ secrets.SFTP_HOST }}
           username: ${{ secrets.SFTP_USERNAME }}
           password: ${{ secrets.SFTP_PASSWORD }}
-          source: "dist/"
+          local-dir: dist/
+          server-dir: /
