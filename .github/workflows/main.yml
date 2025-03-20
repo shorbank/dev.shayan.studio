@@ -11,39 +11,47 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+
       - name: Install dependencies
         run: npm ci
+
       - name: Build project
         run: npm run build
+
+      - name: Create temp folder
+        run: mkdir temp_dist
+
+      - name: Copy built files
+        run: cp -r dist/* temp_dist/
+
+      - name: List target folder
+        run: ls temp_dist
+
       - name: Upload production artifact
         uses: actions/upload-artifact@v3
         with:
-          name: dist
-          path: dist
+          name: node-app
+          path: temp_dist/*
 
   deploy:
     name: Deploy 🚀
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository (sparse)
-        uses: actions/checkout@v3
-        with:
-          sparse-checkout: "dist"
-          sparse-checkout-cone-mode: false  # Deaktiviert rekursives Checkout
-          fetch-depth: 1  # Holt nur das letzte Commit
-      
       - name: Download artifact
         uses: actions/download-artifact@v3
         with:
-          name: dist
-          path: dist
-      
-      - name: Sync only dist folder to hosting
+          name: node-app
+          path: temp_dist
+
+      - name: List downloaded files
+        run: ls temp_dist
+
+      - name: Sync only temp_dist to hosting
         uses: SamKirkland/FTP-Deploy-Action@4.0.0
         with:
           server: ${{ secrets.SFTP_HOST }}
           username: ${{ secrets.SFTP_USERNAME }}
           password: ${{ secrets.SFTP_PASSWORD }}
-          local-dir: dist/
-          dangerous-clean-slate: true  # Entfernt alte Dateien
+          local-dir: temp_dist/
+          dangerous-clean-slate: true  # Optional: Entfernt nicht mehr vorhandene Dateien
