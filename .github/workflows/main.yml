@@ -21,18 +21,37 @@ jobs:
         with:
           name: dist
           path: dist
-  
-  deploy:
-    name: Deploy 🚀
+
+  deploy-staging:
+    name: Deploy to Staging 🧪
     needs: build
     runs-on: ubuntu-latest
     steps:
       - name: Download artifact
         uses: actions/download-artifact@main
-        with: 
+        with:
           name: dist
           path: dist
-      - name: Sync only dist folder to hosting
+      - name: Sync dist folder to STAGING
+        uses: SamKirkland/FTP-Deploy-Action@4.0.0
+        with: 
+          server: ${{ secrets.STAGING_SFTP_HOST }}
+          username: ${{ secrets.STAGING_SFTP_USERNAME }}
+          password: ${{ secrets.STAGING_SFTP_PASSWORD }}
+          local-dir: dist/
+          server-dir: /
+
+  deploy-production:
+    name: Deploy to Production 🚀
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@main
+        with:
+          name: dist
+          path: dist
+      - name: Sync dist folder to PRODUCTION
         uses: SamKirkland/FTP-Deploy-Action@4.0.0
         with: 
           server: ${{ secrets.SFTP_HOST }}
