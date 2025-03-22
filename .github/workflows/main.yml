@@ -45,6 +45,8 @@ jobs:
     name: Deploy to Production 🚀
     needs: deploy-staging
     runs-on: ubuntu-latest
+    environment:
+      name: production
     steps:
       - name: Download artifact
         uses: actions/download-artifact@main
